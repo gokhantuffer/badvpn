@@ -81,4 +81,35 @@ static int udpgw_compute_mtu (int dgram_mtu)
     return s;
 }
 
-#endif
+#ifdef __ANDROID__
+B_START_PACKED
+struct dnsgw_header {
+    uint16_t rsv;
+    uint8_t frag;
+    uint8_t atyp;
+} B_PACKED;
+B_END_PACKED
+
+static int dnsgw_compute_mtu (int dgram_mtu)
+{
+    bsize_t bs = bsize_add(
+        bsize_fromsize(sizeof(struct dnsgw_header)),
+        bsize_add(
+            bsize_max(
+                bsize_fromsize(sizeof(struct udpgw_addr_ipv4)),
+                bsize_fromsize(sizeof(struct udpgw_addr_ipv6))
+            ), 
+            bsize_fromint(dgram_mtu)
+        )
+    );
+    
+    int s;
+    if (!bsize_toint(bs, &s)) {
+        return -1;
+    }
+    
+    return s;
+}
+#endif // __ANDROID__
+
+#endif // BADVPN_PROTOCOL_UDPGW_PROTO_H
